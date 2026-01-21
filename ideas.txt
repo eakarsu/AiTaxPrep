@@ -1,0 +1,62 @@
+Here are 20 Gen AI app ideas ranked by profit potential:
+  ┌──────┬────────────────────────────────┬────────────────────────┬──────────────────────────────────────┐
+  │ Rank │            App Idea            │     Revenue Model      │            Why Profitable            │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 1    │ AI Legal Document Generator    │ SaaS $99-499/mo        │ Lawyers pay premium, high margins    │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 2    │ AI Medical Scribe/Notes        │ Per-provider           │ Healthcare has budget, saves hours   │
+  │      │                                │ $300-500/mo            │ daily                                │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 3    │ AI Sales Email/Outreach        │ SaaS $50-200/user/mo   │ Direct ROI measurable, scales with   │
+  │      │                                │                        │ sales teams                          │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 4    │ AI Resume/Job Application      │ Freemium $20-50/mo     │ Massive market, high conversion      │
+  │      │                                │                        │ urgency                              │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 5    │ AI Real Estate                 │ Per-listing or SaaS    │ Agents pay for time savings          │
+  │      │ Listings/Descriptions          │                        │                                      │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 6    │ AI Customer Support Agent      │ Per-resolution or SaaS │ Replaces $15-25/hr workers 24/7      │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 7    │ AI Code Review/Documentation   │ $30-100/dev/mo         │ Engineering teams have budget        │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 8    │ AI Financial Report Generator  │ Enterprise SaaS        │ CFOs pay for accuracy + speed        │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 9    │ AI Marketing Copy Generator    │ $29-99/mo              │ Every business needs marketing       │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 10   │ AI Video Script/Content        │ Creator tier           │ YouTubers/TikTokers pay for content  │
+  │      │                                │ $20-100/mo             │                                      │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 11   │ AI Meeting Notes/Summarizer    │ $10-30/user/mo         │ Competes with Otter, huge market     │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 12   │ AI Personalized                │ $30-100/mo per student │ Parents pay for kids' education      │
+  │      │ Tutor/Education                │                        │                                      │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 13   │ AI Interior Design Generator   │ Per-design or          │ High perceived value                 │
+  │      │                                │ subscription           │                                      │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 14   │ AI Recipe/Meal Planner         │ Freemium + premium     │ Mass market, ad revenue potential    │
+  │      │                                │ $10/mo                 │                                      │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 15   │ AI Tax Prep Assistant          │ Seasonal $50-200       │ Competes with TurboTax, clear value  │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 16   │ AI Therapy/Mental Health Chat  │ $20-60/mo              │ Growing market, recurring            │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 17   │ AI Dating Profile/Message      │ $10-30/mo              │ High emotional urgency to pay        │
+  │      │ Writer                         │                        │                                      │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 18   │ AI Social Media Manager        │ $30-100/mo             │ SMBs need this, measurable ROI       │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 19   │ AI Product Description Writer  │ Per-listing or SaaS    │ E-commerce sellers pay for scale     │
+  ├──────┼────────────────────────────────┼────────────────────────┼──────────────────────────────────────┤
+  │ 20   │ AI Fitness/Workout Planner     │ $10-20/mo              │ Mass market, health trend            │
+  └──────┴────────────────────────────────┴────────────────────────┴──────────────────────────────────────┘
+  ---
+  Top 5 Easiest to Build + Most Profitable:
+
+  1. AI Resume Builder - Simple input/output, desperate users pay fast
+  2. AI Marketing Copy - GPT wrapper + templates, quick MVP
+  3. AI Customer Support - Widget + API, charge per resolution
+  4. AI Meeting Notes - Transcription + summary, clear value
+  5. AI Sales Emails - Personalization + templates, B2B pays well
+
