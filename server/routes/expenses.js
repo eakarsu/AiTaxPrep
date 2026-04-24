@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const authMiddleware = require('../middleware/auth');
+const { validatePagination, validateBulkOperation, handleValidationErrors } = require('../middleware/sanitize');
+const { exportLimiter, bulkLimiter } = require('../middleware/rateLimiter');
 
 router.use(authMiddleware);
 
@@ -26,12 +28,92 @@ router.get('/categories', async (req, res) => {
   }
 });
 
-// Get all expenses for a tax year
-router.get('/tax-year/:taxYearId', async (req, res) => {
+// Get all expenses for a tax year (with pagination, search, sort, filter)
+router.get('/tax-year/:taxYearId', validatePagination, handleValidationErrors, async (req, res) => {
   try {
+    const { page = 1, limit = 50, search, sortBy = 'expense_date', sortOrder = 'desc', categoryId, vendor } = req.query;
+    const offset = (page - 1) * limit;
+
+    let whereClause = 'e.tax_year_id = $1 AND ty.user_id = $2';
+    const params = [req.params.taxYearId, req.user.id];
+    let paramIdx = 3;
+
+    if (search) {
+      whereClause += ` AND (e.description ILIKE $${paramIdx} OR e.vendor ILIKE $${paramIdx} OR ec.name ILIKE $${paramIdx})`;
+      params.push(`%${search}%`);
+      paramIdx++;
+    }
+
+    if (categoryId) {
+      whereClause += ` AND e.category_id = $${paramIdx}`;
+      params.push(categoryId);
+      paramIdx++;
+    }
+
+    if (vendor) {
+      whereClause += ` AND e.vendor ILIKE $${paramIdx}`;
+      params.push(`%${vendor}%`);
+      paramIdx++;
+    }
+
+    const allowedSorts = { expense_date: 'e.expense_date', amount: 'e.amount', vendor: 'e.vendor', created_at: 'e.created_at', category: 'ec.name' };
+    const orderBy = allowedSorts[sortBy] || 'e.expense_date';
+    const order = sortOrder === 'asc' ? 'ASC' : 'DESC';
+
+    const countResult = await db.query(
+      `SELECT COUNT(*) as total FROM user_expenses e
+       JOIN tax_years ty ON e.tax_year_id = ty.id
+       LEFT JOIN expense_categories ec ON e.category_id = ec.id
+       WHERE ${whereClause}`,
+      params
+    );
+
+    params.push(limit, offset);
     const result = await db.query(
       `SELECT e.*, ec.name as category_name, ec.is_deductible
        FROM user_expenses e
+       JOIN tax_years ty ON e.tax_year_id = ty.id
+       LEFT JOIN expense_categories ec ON e.category_id = ec.id
+       WHERE ${whereClause}
+       ORDER BY ${orderBy} ${order}
+       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
+      params
+    );
+
+    const total = parseInt(countResult.rows[0].total);
+
+    res.json({
+      data: result.rows.map(row => ({
+        id: row.id,
+        categoryId: row.category_id,
+        categoryName: row.category_name,
+        description: row.description,
+        amount: parseFloat(row.amount) || 0,
+        expenseDate: row.expense_date,
+        vendor: row.vendor,
+        receiptPath: row.receipt_path,
+        isBusinessExpense: row.is_business_expense,
+        isDeductible: row.is_deductible,
+        createdAt: row.created_at
+      })),
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get expenses error:', error);
+    res.status(500).json({ error: 'Failed to get expenses' });
+  }
+});
+
+// CSV Export
+router.get('/tax-year/:taxYearId/export/csv', exportLimiter, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT e.*, ec.name as category_name FROM user_expenses e
        JOIN tax_years ty ON e.tax_year_id = ty.id
        LEFT JOIN expense_categories ec ON e.category_id = ec.id
        WHERE e.tax_year_id = $1 AND ty.user_id = $2
@@ -39,22 +121,72 @@ router.get('/tax-year/:taxYearId', async (req, res) => {
       [req.params.taxYearId, req.user.id]
     );
 
-    res.json(result.rows.map(row => ({
-      id: row.id,
-      categoryId: row.category_id,
-      categoryName: row.category_name,
-      description: row.description,
-      amount: parseFloat(row.amount) || 0,
-      expenseDate: row.expense_date,
-      vendor: row.vendor,
-      receiptPath: row.receipt_path,
-      isBusinessExpense: row.is_business_expense,
-      isDeductible: row.is_deductible,
-      createdAt: row.created_at
-    })));
+    const headers = ['ID', 'Date', 'Category', 'Description', 'Vendor', 'Amount', 'Business', 'Created'];
+    const rows = result.rows.map(r => [
+      r.id, r.expense_date ? new Date(r.expense_date).toLocaleDateString() : '',
+      `"${r.category_name || ''}"`, `"${r.description || ''}"`, `"${r.vendor || ''}"`,
+      r.amount, r.is_business_expense ? 'Yes' : 'No',
+      new Date(r.created_at).toLocaleDateString()
+    ]);
+
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=expenses.csv');
+    res.send(csv);
   } catch (error) {
-    console.error('Get expenses error:', error);
-    res.status(500).json({ error: 'Failed to get expenses' });
+    console.error('Export expenses CSV error:', error);
+    res.status(500).json({ error: 'Failed to export CSV' });
+  }
+});
+
+// Bulk Delete
+router.delete('/bulk', bulkLimiter, validateBulkOperation, handleValidationErrors, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    const result = await db.query(
+      'DELETE FROM user_expenses WHERE id = ANY($1) AND user_id = $2 RETURNING id',
+      [ids, req.user.id]
+    );
+
+    await db.query(
+      `INSERT INTO bulk_operations_log (user_id, operation_type, entity_type, entity_ids, details)
+       VALUES ($1, 'delete', 'user_expenses', $2, $3)`,
+      [req.user.id, JSON.stringify(ids), JSON.stringify({ deletedCount: result.rows.length })]
+    );
+
+    res.json({ message: `${result.rows.length} expense(s) deleted`, deletedIds: result.rows.map(r => r.id) });
+  } catch (error) {
+    console.error('Bulk delete expenses error:', error);
+    res.status(500).json({ error: 'Failed to bulk delete' });
+  }
+});
+
+// Bulk Update
+router.put('/bulk', bulkLimiter, async (req, res) => {
+  try {
+    const { ids, updates } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'IDs array is required' });
+    }
+
+    let updatedCount = 0;
+    for (const id of ids) {
+      const result = await db.query(
+        `UPDATE user_expenses SET
+           category_id = COALESCE($1, category_id),
+           is_business_expense = COALESCE($2, is_business_expense),
+           updated_at = NOW()
+         WHERE id = $3 AND user_id = $4
+         RETURNING id`,
+        [updates.categoryId || null, updates.isBusinessExpense !== undefined ? updates.isBusinessExpense : null, id, req.user.id]
+      );
+      if (result.rows.length > 0) updatedCount++;
+    }
+
+    res.json({ message: `${updatedCount} expense(s) updated` });
+  } catch (error) {
+    console.error('Bulk update expenses error:', error);
+    res.status(500).json({ error: 'Failed to bulk update' });
   }
 });
 
@@ -101,7 +233,6 @@ router.post('/', async (req, res) => {
       expenseDate, vendor, receiptPath, isBusinessExpense
     } = req.body;
 
-    // Verify tax year belongs to user
     const tyResult = await db.query(
       'SELECT id FROM tax_years WHERE id = $1 AND user_id = $2',
       [taxYearId, req.user.id]

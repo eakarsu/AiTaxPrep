@@ -1,7 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const helmet = require('helmet');
 require('dotenv').config();
+
+const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
+const { sanitizeMiddleware } = require('./middleware/sanitize');
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -18,13 +22,29 @@ const dashboardRoutes = require('./routes/dashboard');
 const formRoutes = require('./routes/forms');
 const aiRoutes = require('./routes/ai');
 const advancedRoutes = require('./routes/advanced');
+const aiFeaturesRoutes = require('./routes/ai-features');
 
 const app = express();
 
+// Security headers via helmet
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: false
+}));
+
 // Middleware
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Input sanitization
+app.use(sanitizeMiddleware);
+
+// Rate limiting on all API routes
+app.use('/api', apiLimiter);
+
+// Stricter rate limiting on auth routes
+app.use('/api/auth', authLimiter);
 
 // Static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -45,6 +65,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/forms', formRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/advanced', advancedRoutes);
+app.use('/api/ai-features', aiFeaturesRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -65,7 +86,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong!', message: err.message });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`API available at http://localhost:${PORT}/api`);

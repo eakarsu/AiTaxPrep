@@ -101,10 +101,20 @@ install_dependencies() {
 run_migrations() {
     print_status "Running database migrations..."
     if npm run db:migrate; then
-        print_success "Migrations completed"
+        print_success "Main migrations completed"
     else
-        print_warning "Migrations had some issues. Continuing..."
+        print_warning "Main migrations had some issues. Continuing..."
     fi
+
+    # Run AI features migration
+    print_status "Running AI features migrations..."
+    cd server
+    if node db/migrate-ai-features.js 2>/dev/null; then
+        print_success "AI features migrations completed"
+    else
+        print_warning "AI features migrations had issues. Continuing..."
+    fi
+    cd ..
 }
 
 # Seed the database
@@ -115,6 +125,16 @@ seed_database() {
     else
         print_warning "Seeding had some issues (data may already exist). Continuing..."
     fi
+
+    # Run AI features seed
+    print_status "Seeding AI features data..."
+    cd server
+    if node db/seed-ai-features.js 2>/dev/null; then
+        print_success "AI features seeded (15+ items per feature)"
+    else
+        print_warning "AI features seeding had issues (data may already exist). Continuing..."
+    fi
+    cd ..
 }
 
 # Clear used ports

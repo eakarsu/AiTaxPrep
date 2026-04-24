@@ -2,11 +2,87 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const authMiddleware = require('../middleware/auth');
+const { validatePagination, validateBulkOperation, handleValidationErrors } = require('../middleware/sanitize');
+const { exportLimiter, bulkLimiter } = require('../middleware/rateLimiter');
 
 router.use(authMiddleware);
 
-// Get all income sources for a tax year
-router.get('/tax-year/:taxYearId', async (req, res) => {
+// Get all income sources for a tax year (with pagination, search, sort, filter)
+router.get('/tax-year/:taxYearId', validatePagination, handleValidationErrors, async (req, res) => {
+  try {
+    const { page = 1, limit = 50, search, sortBy = 'wages', sortOrder = 'desc', sourceType } = req.query;
+    const offset = (page - 1) * limit;
+
+    let whereClause = 'i.tax_year_id = $1 AND ty.user_id = $2';
+    const params = [req.params.taxYearId, req.user.id];
+    let paramIdx = 3;
+
+    if (search) {
+      whereClause += ` AND (i.employer_name ILIKE $${paramIdx} OR i.description ILIKE $${paramIdx} OR i.source_type ILIKE $${paramIdx})`;
+      params.push(`%${search}%`);
+      paramIdx++;
+    }
+
+    if (sourceType) {
+      whereClause += ` AND i.source_type = $${paramIdx}`;
+      params.push(sourceType);
+      paramIdx++;
+    }
+
+    const allowedSorts = { wages: 'i.wages', employer_name: 'i.employer_name', source_type: 'i.source_type', federal_tax_withheld: 'i.federal_tax_withheld', created_at: 'i.created_at' };
+    const orderBy = allowedSorts[sortBy] || 'i.wages';
+    const order = sortOrder === 'asc' ? 'ASC' : 'DESC';
+
+    const countResult = await db.query(
+      `SELECT COUNT(*) as total FROM income_sources i JOIN tax_years ty ON i.tax_year_id = ty.id WHERE ${whereClause}`,
+      params
+    );
+
+    params.push(limit, offset);
+    const result = await db.query(
+      `SELECT i.* FROM income_sources i
+       JOIN tax_years ty ON i.tax_year_id = ty.id
+       WHERE ${whereClause}
+       ORDER BY ${orderBy} ${order}
+       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
+      params
+    );
+
+    const total = parseInt(countResult.rows[0].total);
+
+    res.json({
+      data: result.rows.map(row => ({
+        id: row.id,
+        sourceType: row.source_type,
+        employerName: row.employer_name,
+        employerEin: row.employer_ein,
+        employerAddress: row.employer_address,
+        wages: parseFloat(row.wages) || 0,
+        federalTaxWithheld: parseFloat(row.federal_tax_withheld) || 0,
+        stateTaxWithheld: parseFloat(row.state_tax_withheld) || 0,
+        socialSecurityWages: parseFloat(row.social_security_wages) || 0,
+        socialSecurityTax: parseFloat(row.social_security_tax) || 0,
+        medicareWages: parseFloat(row.medicare_wages) || 0,
+        medicareTax: parseFloat(row.medicare_tax) || 0,
+        otherIncome: parseFloat(row.other_income) || 0,
+        description: row.description,
+        createdAt: row.created_at
+      })),
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get income sources error:', error);
+    res.status(500).json({ error: 'Failed to get income sources' });
+  }
+});
+
+// CSV Export
+router.get('/tax-year/:taxYearId/export/csv', exportLimiter, async (req, res) => {
   try {
     const result = await db.query(
       `SELECT i.* FROM income_sources i
@@ -16,26 +92,78 @@ router.get('/tax-year/:taxYearId', async (req, res) => {
       [req.params.taxYearId, req.user.id]
     );
 
-    res.json(result.rows.map(row => ({
-      id: row.id,
-      sourceType: row.source_type,
-      employerName: row.employer_name,
-      employerEin: row.employer_ein,
-      employerAddress: row.employer_address,
-      wages: parseFloat(row.wages) || 0,
-      federalTaxWithheld: parseFloat(row.federal_tax_withheld) || 0,
-      stateTaxWithheld: parseFloat(row.state_tax_withheld) || 0,
-      socialSecurityWages: parseFloat(row.social_security_wages) || 0,
-      socialSecurityTax: parseFloat(row.social_security_tax) || 0,
-      medicareWages: parseFloat(row.medicare_wages) || 0,
-      medicareTax: parseFloat(row.medicare_tax) || 0,
-      otherIncome: parseFloat(row.other_income) || 0,
-      description: row.description,
-      createdAt: row.created_at
-    })));
+    const headers = ['ID', 'Type', 'Employer', 'EIN', 'Wages', 'Federal Withheld', 'State Withheld', 'Other Income', 'Created'];
+    const rows = result.rows.map(r => [
+      r.id, r.source_type, `"${r.employer_name}"`, r.employer_ein,
+      r.wages, r.federal_tax_withheld, r.state_tax_withheld, r.other_income,
+      new Date(r.created_at).toLocaleDateString()
+    ]);
+
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=income_sources.csv');
+    res.send(csv);
   } catch (error) {
-    console.error('Get income sources error:', error);
-    res.status(500).json({ error: 'Failed to get income sources' });
+    console.error('Export income CSV error:', error);
+    res.status(500).json({ error: 'Failed to export CSV' });
+  }
+});
+
+// Bulk Delete
+router.delete('/bulk', bulkLimiter, validateBulkOperation, handleValidationErrors, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    const result = await db.query(
+      'DELETE FROM income_sources WHERE id = ANY($1) AND user_id = $2 RETURNING id',
+      [ids, req.user.id]
+    );
+
+    await db.query(
+      `INSERT INTO bulk_operations_log (user_id, operation_type, entity_type, entity_ids, details)
+       VALUES ($1, 'delete', 'income_sources', $2, $3)`,
+      [req.user.id, JSON.stringify(ids), JSON.stringify({ deletedCount: result.rows.length })]
+    );
+
+    res.json({ message: `${result.rows.length} income source(s) deleted`, deletedIds: result.rows.map(r => r.id) });
+  } catch (error) {
+    console.error('Bulk delete income error:', error);
+    res.status(500).json({ error: 'Failed to bulk delete' });
+  }
+});
+
+// Bulk Update
+router.put('/bulk', bulkLimiter, async (req, res) => {
+  try {
+    const { ids, updates } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'IDs array is required' });
+    }
+
+    let updatedCount = 0;
+    for (const id of ids) {
+      const result = await db.query(
+        `UPDATE income_sources SET
+           source_type = COALESCE($1, source_type),
+           employer_name = COALESCE($2, employer_name),
+           updated_at = NOW()
+         WHERE id = $3 AND user_id = $4
+         RETURNING id`,
+        [updates.sourceType || null, updates.employerName || null, id, req.user.id]
+      );
+      if (result.rows.length > 0) updatedCount++;
+    }
+
+    await db.query(
+      `INSERT INTO bulk_operations_log (user_id, operation_type, entity_type, entity_ids, details)
+       VALUES ($1, 'update', 'income_sources', $2, $3)`,
+      [req.user.id, JSON.stringify(ids), JSON.stringify({ updatedCount, updates })]
+    );
+
+    res.json({ message: `${updatedCount} income source(s) updated` });
+  } catch (error) {
+    console.error('Bulk update income error:', error);
+    res.status(500).json({ error: 'Failed to bulk update' });
   }
 });
 
@@ -86,7 +214,6 @@ router.post('/', async (req, res) => {
       socialSecurityTax, medicareWages, medicareTax, otherIncome, description
     } = req.body;
 
-    // Verify tax year belongs to user
     const tyResult = await db.query(
       'SELECT id FROM tax_years WHERE id = $1 AND user_id = $2',
       [taxYearId, req.user.id]

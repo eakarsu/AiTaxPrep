@@ -336,6 +336,11 @@ body {
   color: #1e40af;
 }
 
+.badge-secondary {
+  background: #e2e8f0;
+  color: #475569;
+}
+
 /* Alerts */
 .alert {
   padding: 16px 20px;
@@ -616,4 +621,58 @@ body {
 
 .tab:hover {
   color: var(--text);
+}
+
+/* AI Tool Cards */
+.ai-tool-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.ai-tool-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+}
+
+/* Quick Stats */
+.quick-stat {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.quick-stat:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow);
+}
+
+/* Clickable Cards */
+.clickable {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Badge Danger */
+.badge-danger {
+  background-color: var(--danger);
+  color: white;
+}
+
+/* Stat Card Improvements */
+.stat-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.stat-value.positive {
+  color: var(--success);
+}
+
+.stat-value.negative {
+  color: var(--danger);
 }

@@ -359,6 +359,84 @@ Assess the audit risk based on IRS patterns and statistics.`;
     }
   }
 
+  async calculateEstimatedTaxes(userContext) {
+    const systemPrompt = `You are a tax advisor. Analyze estimated quarterly taxes. Return ONLY valid JSON, no markdown.
+
+IMPORTANT: Keep response under 1500 characters. Be concise.
+
+JSON format (return exactly this structure):
+{"analysis":{"effectiveTaxRate":number,"marginalBracket":number,"totalEstimatedTax":number,"quarterlyPayment":number},"safeHarborStrategy":{"method":"string","explanation":"short string under 100 chars","recommendedAmount":number},"taxSavingOpportunities":[{"strategy":"string","potentialSavings":number,"description":"short string"}],"warnings":["string"],"recommendations":["string"]}`;
+
+    const income = userContext.estimatedAnnualIncome || userContext.grossIncome || 50000;
+    const deductions = userContext.estimatedDeductions || userContext.standardDeduction || 14600;
+    const taxableIncome = Math.max(0, income - deductions);
+
+    const userPrompt = `Calculate estimated taxes. Keep response SHORT and valid JSON only.
+
+Filing: ${userContext.filingStatus || 'Single'}
+Gross Income: $${income.toLocaleString()}
+Deductions: $${deductions.toLocaleString()}
+Taxable Income: $${taxableIncome.toLocaleString()}
+Self-Employment: $${userContext.selfEmploymentIncome?.toLocaleString() || 0}
+
+Calculate: effectiveTaxRate, totalEstimatedTax, quarterlyPayment. Suggest 2 tax saving strategies. Return JSON only.`;
+
+    const response = await this.chat([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ], { temperature: 0.2, maxTokens: 1000 });
+
+    try {
+      // Clean response - remove markdown formatting
+      let cleanResponse = response
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .replace(/\n/g, ' ')
+        .trim();
+
+      console.log('AI raw response (first 500 chars):', cleanResponse.substring(0, 500));
+
+      // Extract JSON from response
+      const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        console.log('Parsed AI estimated tax response successfully:', JSON.stringify(parsed.analysis));
+        return parsed;
+      }
+      return {
+        analysis: { totalEstimatedTax: 0, quarterlyPayment: 0 },
+        recommendations: [cleanResponse],
+        warnings: []
+      };
+    } catch (e) {
+      console.error('Failed to parse AI estimated tax response:', e.message);
+      // Return calculated values as fallback
+      const income = userContext.estimatedAnnualIncome || userContext.grossIncome || 50000;
+      const deductions = userContext.estimatedDeductions || userContext.standardDeduction || 14600;
+      const taxableIncome = Math.max(0, income - deductions);
+      const estimatedTax = taxableIncome * 0.22; // Approximate 22% bracket
+
+      return {
+        analysis: {
+          totalEstimatedTax: Math.round(estimatedTax),
+          quarterlyPayment: Math.round(estimatedTax / 4),
+          effectiveTaxRate: ((estimatedTax / income) * 100).toFixed(1)
+        },
+        safeHarborStrategy: {
+          method: '100% of prior year tax',
+          explanation: 'Pay at least 100% of last year tax to avoid penalties',
+          recommendedAmount: Math.round(estimatedTax / 4)
+        },
+        taxSavingOpportunities: [
+          { strategy: 'Maximize retirement contributions', potentialSavings: Math.round(taxableIncome * 0.05), description: 'Contribute to 401k or IRA' },
+          { strategy: 'Review itemized deductions', potentialSavings: Math.round(taxableIncome * 0.03), description: 'Compare to standard deduction' }
+        ],
+        recommendations: ['AI parsing failed - using calculated estimates'],
+        warnings: []
+      };
+    }
+  }
+
   async generateInterviewQuestion(context) {
     const answers = context.answers || {};
 

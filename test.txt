@@ -1,0 +1,47 @@
+1. Income Page
+
+  - Click Income in sidebar
+  - Click any row in the table
+  - In the detail modal, click Edit button
+  - Modify fields and click Save Changes
+
+  2. Deductions Page
+
+  - Click Deductions in sidebar
+  - Click any row → Edit → Modify → Save Changes
+
+  3. Tax Credits Page
+
+  - Click Tax Credits in sidebar
+  - Click any row → Edit → Modify → Save Changes
+
+  4. Dependents Page
+
+  - Click Dependents in sidebar
+  - Click any row → Edit → Modify → Save Changes
+
+  5. Expenses Page
+
+  - Click Expenses in sidebar
+  - Click any row → Edit → Modify → Save Changes
+
+  Testing AI Features
+
+  Dashboard AI Tools
+
+  - Go to Dashboard
+  - Click any of the 5 AI tool cards to navigate to that feature
+
+  AI Audit Risk Scorer
+
+  - Click Audit Risk in sidebar
+  - Click "+ New Analysis" to generate AI risk assessment
+  - Click any card to view details
+
+  AI Estimated Tax Calculator
+
+  - Click Estimated Taxes in sidebar
+  - Click "+ Calculate Estimates"
+  - Enter optional values and click "Calculate Quarterly Payments"
+
+  All detail modals now have Close, Edit, and Delete buttons!
