@@ -1014,4 +1014,160 @@ router.post('/interview/reset', async (req, res) => {
   }
 });
 
+// State/Local tax optimization
+router.post('/state-tax-optimize', async (req, res) => {
+  try {
+    const { taxYearId, residentState, otherStates } = req.body;
+    if (!taxYearId) return res.status(400).json({ error: 'Tax year ID is required' });
+    if (!residentState) return res.status(400).json({ error: 'residentState is required' });
+
+    const context = await getUserContext(req.user.id, taxYearId);
+
+    const systemPrompt = `You are a state and local tax planning expert. Provide actionable, jurisdiction-specific guidance.
+Resident state: ${residentState}
+Other states involved: ${(otherStates || []).join(', ') || 'none'}
+Federal context: filingStatus=${context.filingStatus}, AGI=${context.agi}, deductionType=${context.deductionType}.
+Respond with raw JSON ONLY:
+{
+  "state_advice": [{"state": "...", "recommendation": "...", "estimated_savings_usd": <number>, "priority": "low|medium|high"}],
+  "watch_outs": ["..."],
+  "filing_obligations": [{"state": "...", "form": "...", "due_date": "..."}],
+  "summary": "..."
+}`;
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: `User context: ${JSON.stringify(context)}` }
+    ];
+    const raw = await aiService.chat(messages, { temperature: 0.3 });
+    let parsed = null;
+    try { parsed = JSON.parse(raw); } catch (_) {
+      const m = raw.match(/\{[\s\S]*\}/);
+      if (m) { try { parsed = JSON.parse(m[0]); } catch (_) {} }
+    }
+    res.json({ result: parsed || { raw }, raw });
+  } catch (error) {
+    console.error('State tax optimize error:', error);
+    res.status(500).json({ error: 'Failed to generate state tax optimization' });
+  }
+});
+
+// Estimated payment planning — quarterly recommendations
+router.post('/estimated-payments', async (req, res) => {
+  try {
+    const { taxYearId, ytdIncome, ytdWithholding, projectedRemainingIncome } = req.body;
+    if (!taxYearId) return res.status(400).json({ error: 'Tax year ID is required' });
+    const context = await getUserContext(req.user.id, taxYearId);
+
+    const systemPrompt = `You are a tax estimated-payment planning expert. Recommend quarterly estimated payments to avoid underpayment penalties (US federal + state if applicable).
+Respond with raw JSON ONLY:
+{
+  "quarters": [{"quarter": "Q1|Q2|Q3|Q4", "due_date": "YYYY-MM-DD", "federal_payment_usd": <number>, "state_payment_usd": <number>, "rationale": "..."}],
+  "safe_harbor_strategy": "100%-prior-year|110%-prior-year|90%-current-year",
+  "underpayment_penalty_risk": "low|medium|high",
+  "notes": ["..."],
+  "summary": "..."
+}`;
+    const userMsg = `User context: ${JSON.stringify(context)}
+YTD income: ${ytdIncome ?? 'not provided'}
+YTD withholding: ${ytdWithholding ?? 'not provided'}
+Projected remaining income: ${projectedRemainingIncome ?? 'not provided'}`;
+
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMsg }
+    ];
+    const raw = await aiService.chat(messages, { temperature: 0.3 });
+    let parsed = null;
+    try { parsed = JSON.parse(raw); } catch (_) {
+      const m = raw.match(/\{[\s\S]*\}/);
+      if (m) { try { parsed = JSON.parse(m[0]); } catch (_) {} }
+    }
+    res.json({ result: parsed || { raw }, raw });
+  } catch (error) {
+    console.error('Estimated payments error:', error);
+    res.status(500).json({ error: 'Failed to generate estimated payment plan' });
+  }
+});
+
+// Year-over-year anomaly detection
+router.post('/yoy-anomaly', async (req, res) => {
+  if (!process.env.OPENROUTER_API_KEY) return res.status(503).json({ error: 'AI provider not configured' });
+  try {
+    const { taxYearId, priorYearSummary, currentYearSummary } = req.body;
+    if (!taxYearId) return res.status(400).json({ error: 'Tax year ID is required' });
+
+    const context = await getUserContext(req.user.id, taxYearId);
+
+    const systemPrompt = `You are a tax compliance analyst. Compare year-over-year tax returns and surface anomalies that might indicate data-entry errors, missed deductions, audit risk, or planning opportunities.
+Respond with raw JSON ONLY:
+{
+  "anomalies": [{"category": "income|deduction|credit|withholding|filing_status|other", "field": "...", "prior_value": <number>, "current_value": <number>, "delta_pct": <number>, "severity": "low|medium|high", "explanation": "...", "recommended_action": "..."}],
+  "audit_risk": "low|medium|high",
+  "planning_opportunities": ["..."],
+  "summary": "..."
+}`;
+
+    const userMsg = `Current-year context: ${JSON.stringify(context)}
+Prior-year summary (caller-provided): ${JSON.stringify(priorYearSummary || {})}
+Current-year summary (caller-provided overrides): ${JSON.stringify(currentYearSummary || {})}`;
+
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMsg },
+    ];
+    const raw = await aiService.chat(messages, { temperature: 0.2 });
+    let parsed = null;
+    try { parsed = JSON.parse(raw); } catch (_) {
+      const m = raw.match(/\{[\s\S]*\}/);
+      if (m) { try { parsed = JSON.parse(m[0]); } catch (_) {} }
+    }
+    res.json({ result: parsed || { raw }, raw });
+  } catch (error) {
+    console.error('YoY anomaly error:', error);
+    res.status(500).json({ error: 'Failed to detect year-over-year anomalies' });
+  }
+});
+
+// Multi-scenario filing comparison (MFS / MFJ / HoH / Single)
+router.post('/filing-scenario-compare', async (req, res) => {
+  if (!process.env.OPENROUTER_API_KEY) return res.status(503).json({ error: 'AI provider not configured' });
+  try {
+    const { taxYearId, scenarios, focus } = req.body;
+    if (!taxYearId) return res.status(400).json({ error: 'Tax year ID is required' });
+
+    const context = await getUserContext(req.user.id, taxYearId);
+    const requestedScenarios = Array.isArray(scenarios) && scenarios.length > 0
+      ? scenarios
+      : ['single', 'married_filing_jointly', 'married_filing_separately', 'head_of_household'];
+
+    const systemPrompt = `You are a US individual income tax planner. Compare filing-status scenarios and recommend the optimal one given the user's facts. Be transparent about assumptions and flag eligibility constraints (e.g., HoH qualifying child rules, MFS limitations).
+Respond with raw JSON ONLY:
+{
+  "scenarios": [{"filing_status": "single|married_filing_jointly|married_filing_separately|head_of_household|qualifying_widow", "estimated_tax_liability_usd": <number>, "estimated_refund_or_owed_usd": <number>, "key_deductions": ["..."], "key_credits": ["..."], "eligibility_constraints": ["..."], "notes": "..."}],
+  "recommended_status": "...",
+  "recommendation_rationale": "...",
+  "tradeoffs": ["..."],
+  "summary": "..."
+}`;
+    const userMsg = `User context: ${JSON.stringify(context)}
+Scenarios to compare: ${JSON.stringify(requestedScenarios)}
+Focus / extra notes: ${focus || 'none'}`;
+
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMsg },
+    ];
+    const raw = await aiService.chat(messages, { temperature: 0.3 });
+    let parsed = null;
+    try { parsed = JSON.parse(raw); } catch (_) {
+      const m = raw.match(/\{[\s\S]*\}/);
+      if (m) { try { parsed = JSON.parse(m[0]); } catch (_) {} }
+    }
+    res.json({ result: parsed || { raw }, raw });
+  } catch (error) {
+    console.error('Filing scenario compare error:', error);
+    res.status(500).json({ error: 'Failed to compare filing scenarios' });
+  }
+});
+
 module.exports = router;

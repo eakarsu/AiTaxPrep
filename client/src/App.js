@@ -1,6 +1,23 @@
 import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+// === Batch 08 Gaps & Frontend Mounts ===
+import CfTaxOptimizationScenariosMfjVsMfsHoh from './pages/CfTaxOptimizationScenariosMfjVsMfsHoh'
+import CfEstimatedTaxPlanningWithQuarterlyPaymentRecommendations from './pages/CfEstimatedTaxPlanningWithQuarterlyPaymentRecommendations'
+import CfMultiStateTaxPlanningForStateSpecific from './pages/CfMultiStateTaxPlanningForStateSpecific'
+import CfDocumentAutoCategorizationViaReceiptOcrMl from './pages/CfDocumentAutoCategorizationViaReceiptOcrMl'
+import CfEngagementLetterESignWithScopeFees from './pages/CfEngagementLetterESignWithScopeFees'
+import CfIrsNoticeCp1099LetterAutoResponse from './pages/CfIrsNoticeCp1099LetterAutoResponse'
+import GapNoStateLocalTaxOptimizationAi from './pages/GapNoStateLocalTaxOptimizationAi'
+import GapNoEstimatedPaymentPlanningAi from './pages/GapNoEstimatedPaymentPlanningAi'
+import GapNoAutomatedAuditRiskEarlyWarningMonitor from './pages/GapNoAutomatedAuditRiskEarlyWarningMonitor'
+import GapNoEFilingIntegrationEfinIrsMef from './pages/GapNoEFilingIntegrationEfinIrsMef'
+import GapLimitedCpaCoordinationBeyondEngagementLetters from './pages/GapLimitedCpaCoordinationBeyondEngagementLetters'
+import GapNoTaxPlanComparisonStandardVsItemized from './pages/GapNoTaxPlanComparisonStandardVsItemized'
+import GapNoYearOverYearComparisonAndAnomaly from './pages/GapNoYearOverYearComparisonAndAnomaly'
+import GapNoWebhooksNotificationsSystem from './pages/GapNoWebhooksNotificationsSystem'
+import GapNoAuditLogSubsystem from './pages/GapNoAuditLogSubsystem'
+import GapLimitedIntegrationsModuleExistsButNotDeeply from './pages/GapLimitedIntegrationsModuleExistsButNotDeeply'
 
 // API Configuration
 const api = axios.create({
@@ -396,6 +413,10 @@ function Layout({ children }) {
     { path: '/calculations', icon: '🧮', label: 'Tax Calculator' },
     { path: '/tax-planning', icon: '📈', label: 'Tax Planning' },
     { path: '/state-returns', icon: '🗺️', label: 'State Returns' },
+    { path: '/state-tax-optimize', icon: '🏛️', label: 'State Tax Optimizer' },
+    { path: '/estimated-payments-ai', icon: '💸', label: 'Estimated Payments (AI)' },
+    { path: '/yoy-anomaly', icon: '📈', label: 'YoY Anomaly Detector' },
+    { path: '/filing-scenario-compare', icon: '⚖️', label: 'Filing Scenarios' },
     { path: '/advice', icon: '💡', label: 'AI Advice' },
     { path: '/forms', icon: '📋', label: 'Tax Forms' },
     { path: '/efile', icon: '📤', label: 'E-File' },
@@ -5707,6 +5728,519 @@ function ReceiptScannerPage() {
   );
 }
 
+// ============================================================
+// STATE TAX OPTIMIZATION PAGE
+// ============================================================
+function StateTaxOptimizePage() {
+  const [taxYears, setTaxYears] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(null);
+  const [state, setState] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
+  const toast = useToast();
+
+  useEffect(() => {
+    api.get('/tax-years').then(res => {
+      setTaxYears(res.data);
+      if (res.data.length > 0) setSelectedYear(res.data[0].id);
+    }).catch(() => {});
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(''); setResult(null); setLoading(true);
+    try {
+      const payload = {
+        state,
+        ...(selectedYear ? { taxYearId: selectedYear } : {}),
+      };
+      const res = await api.post('/ai/state-tax-optimize', payload);
+      setResult(res.data);
+      toast?.addToast?.('State tax optimization complete', 'success');
+    } catch (err) {
+      const msg = err.response?.data?.error || err.message || 'Optimization failed';
+      setError(msg);
+      toast?.addToast?.(msg, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <h1>State / Local Tax Optimizer</h1>
+        <p className="page-subtitle">AI-driven jurisdiction-specific advice using your tax profile.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="card" style={{ padding: 24, marginBottom: 20 }}>
+        <div className="form-row" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div className="form-group" style={{ flex: 1, minWidth: 180 }}>
+            <label className="form-label">State</label>
+            <input type="text" className="form-input" value={state} onChange={(e) => setState(e.target.value)} placeholder="e.g. CA, TX, NY" required />
+          </div>
+          <div className="form-group" style={{ flex: 1, minWidth: 180 }}>
+            <label className="form-label">Tax Year</label>
+            <select className="form-input" value={selectedYear || ''} onChange={(e) => setSelectedYear(Number(e.target.value))}>
+              <option value="">Select year</option>
+              {taxYears.map(y => <option key={y.id} value={y.id}>{y.year || y.id}</option>)}
+            </select>
+          </div>
+        </div>
+        <button type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop: 12 }}>
+          {loading ? 'Analyzing...' : 'Optimize State Tax'}
+        </button>
+      </form>
+
+      {error && <div className="alert alert-error">{error}</div>}
+
+      {result && (
+        <div className="card" style={{ padding: 24 }}>
+          <h3>Optimization Result</h3>
+          <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13, background: 'var(--background)', padding: 14, borderRadius: 8, overflow: 'auto' }}>
+            {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// ESTIMATED PAYMENTS (AI) PAGE
+// ============================================================
+function EstimatedPaymentsAIPage() {
+  const [taxYears, setTaxYears] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(null);
+  const [strategy, setStrategy] = useState('safe-harbor');
+  const [annualIncome, setAnnualIncome] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
+  const toast = useToast();
+
+  useEffect(() => {
+    api.get('/tax-years').then(res => {
+      setTaxYears(res.data);
+      if (res.data.length > 0) setSelectedYear(res.data[0].id);
+    }).catch(() => {});
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(''); setResult(null); setLoading(true);
+    try {
+      const payload = {
+        ...(selectedYear ? { taxYearId: selectedYear } : {}),
+        strategy,
+        ...(annualIncome ? { estimatedAnnualIncome: parseFloat(annualIncome) } : {}),
+      };
+      const res = await api.post('/ai/estimated-payments', payload);
+      setResult(res.data);
+      toast?.addToast?.('Quarterly recommendations generated', 'success');
+    } catch (err) {
+      const msg = err.response?.data?.error || err.message || 'Failed';
+      setError(msg);
+      toast?.addToast?.(msg, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <h1>Estimated Payments Planner (AI)</h1>
+        <p className="page-subtitle">Quarterly recommendations with safe-harbor strategy.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="card" style={{ padding: 24, marginBottom: 20 }}>
+        <div className="form-row" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div className="form-group" style={{ flex: 1, minWidth: 180 }}>
+            <label className="form-label">Tax Year</label>
+            <select className="form-input" value={selectedYear || ''} onChange={(e) => setSelectedYear(Number(e.target.value))}>
+              <option value="">Select year</option>
+              {taxYears.map(y => <option key={y.id} value={y.id}>{y.year || y.id}</option>)}
+            </select>
+          </div>
+          <div className="form-group" style={{ flex: 1, minWidth: 180 }}>
+            <label className="form-label">Strategy</label>
+            <select className="form-input" value={strategy} onChange={(e) => setStrategy(e.target.value)}>
+              <option value="safe-harbor">Safe Harbor (110% prior year)</option>
+              <option value="current-year">Pay-as-you-go (current year)</option>
+              <option value="annualized">Annualized Income</option>
+            </select>
+          </div>
+          <div className="form-group" style={{ flex: 1, minWidth: 180 }}>
+            <label className="form-label">Estimated Annual Income (optional)</label>
+            <input type="number" className="form-input" value={annualIncome} onChange={(e) => setAnnualIncome(e.target.value)} placeholder="120000" />
+          </div>
+        </div>
+        <button type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop: 12 }}>
+          {loading ? 'Planning...' : 'Generate Plan'}
+        </button>
+      </form>
+
+      {error && <div className="alert alert-error">{error}</div>}
+
+      {result && (
+        <div className="card" style={{ padding: 24 }}>
+          <h3>Plan</h3>
+          <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13, background: 'var(--background)', padding: 14, borderRadius: 8, overflow: 'auto' }}>
+            {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// YEAR-OVER-YEAR ANOMALY PAGE
+// ============================================================
+function YoYAnomalyPage() {
+  const [taxYears, setTaxYears] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(null);
+  const [priorJson, setPriorJson] = useState('');
+  const [currentJson, setCurrentJson] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
+  const toast = useToast();
+
+  useEffect(() => {
+    api.get('/tax-years').then(res => {
+      setTaxYears(res.data);
+      if (res.data.length > 0) setSelectedYear(res.data[0].id);
+    }).catch(() => {});
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(''); setResult(null); setLoading(true);
+    try {
+      const payload = { ...(selectedYear ? { taxYearId: selectedYear } : {}) };
+      if (priorJson) {
+        try { payload.priorYearSummary = JSON.parse(priorJson); }
+        catch { payload.priorYearSummary = priorJson; }
+      }
+      if (currentJson) {
+        try { payload.currentYearSummary = JSON.parse(currentJson); }
+        catch { payload.currentYearSummary = currentJson; }
+      }
+      const res = await api.post('/ai/yoy-anomaly', payload);
+      setResult(res.data);
+      toast?.addToast?.('YoY anomaly analysis complete', 'success');
+    } catch (err) {
+      const status = err.response?.status;
+      const msg = status === 503
+        ? 'AI provider not configured (set OPENROUTER_API_KEY).'
+        : err.response?.data?.error || err.message || 'Analysis failed';
+      setError(msg);
+      toast?.addToast?.(msg, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <h1>Year-over-Year Anomaly Detector</h1>
+        <p className="page-subtitle">Surface unusual deltas, audit risk, and planning opportunities.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="card" style={{ padding: 24, marginBottom: 20 }}>
+        <div className="form-row" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div className="form-group" style={{ flex: 1, minWidth: 180 }}>
+            <label className="form-label">Tax Year (current)</label>
+            <select className="form-input" value={selectedYear || ''} onChange={(e) => setSelectedYear(Number(e.target.value))}>
+              <option value="">Select year</option>
+              {taxYears.map(y => <option key={y.id} value={y.id}>{y.year || y.id}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Prior-year summary (optional JSON)</label>
+          <textarea className="form-input" rows={5} value={priorJson} onChange={(e) => setPriorJson(e.target.value)} placeholder='{"agi":85000,"federal_tax":12000,"itemized":false}' />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Current-year summary (optional JSON)</label>
+          <textarea className="form-input" rows={5} value={currentJson} onChange={(e) => setCurrentJson(e.target.value)} placeholder='{"agi":120000,"federal_tax":18000,"itemized":true}' />
+        </div>
+        <button type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop: 12 }}>
+          {loading ? 'Analyzing...' : 'Detect Anomalies'}
+        </button>
+      </form>
+
+      {error && <div className="alert alert-error">{error}</div>}
+
+      {result && (
+        <div className="card" style={{ padding: 24 }}>
+          <h3>Anomaly Report</h3>
+          <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13, background: 'var(--background)', padding: 14, borderRadius: 8, overflow: 'auto' }}>
+            {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// FILING SCENARIO COMPARISON PAGE
+// ============================================================
+function FilingScenarioComparePage() {
+  const [taxYears, setTaxYears] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(null);
+  const [scenarios, setScenarios] = useState({
+    single: true,
+    married_filing_jointly: true,
+    married_filing_separately: true,
+    head_of_household: true,
+  });
+  const [focus, setFocus] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
+  const toast = useToast();
+
+  useEffect(() => {
+    api.get('/tax-years').then(res => {
+      setTaxYears(res.data);
+      if (res.data.length > 0) setSelectedYear(res.data[0].id);
+    }).catch(() => {});
+  }, []);
+
+  const toggle = (key) => setScenarios((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(''); setResult(null); setLoading(true);
+    try {
+      const selected = Object.keys(scenarios).filter((k) => scenarios[k]);
+      const payload = {
+        ...(selectedYear ? { taxYearId: selectedYear } : {}),
+        scenarios: selected,
+        ...(focus ? { focus } : {}),
+      };
+      const res = await api.post('/ai/filing-scenario-compare', payload);
+      setResult(res.data);
+      toast?.addToast?.('Filing-scenario comparison complete', 'success');
+    } catch (err) {
+      const status = err.response?.status;
+      const msg = status === 503
+        ? 'AI provider not configured (set OPENROUTER_API_KEY).'
+        : err.response?.data?.error || err.message || 'Comparison failed';
+      setError(msg);
+      toast?.addToast?.(msg, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <h1>Filing Scenario Comparison</h1>
+        <p className="page-subtitle">Compare MFJ / MFS / HoH / Single side-by-side and pick the best.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="card" style={{ padding: 24, marginBottom: 20 }}>
+        <div className="form-group">
+          <label className="form-label">Tax Year</label>
+          <select className="form-input" value={selectedYear || ''} onChange={(e) => setSelectedYear(Number(e.target.value))}>
+            <option value="">Select year</option>
+            {taxYears.map(y => <option key={y.id} value={y.id}>{y.year || y.id}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Scenarios to compare</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+            {Object.keys(scenarios).map((k) => (
+              <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input type="checkbox" checked={scenarios[k]} onChange={() => toggle(k)} />
+                {k.replaceAll('_', ' ')}
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Focus / extra notes (optional)</label>
+          <input type="text" className="form-input" value={focus} onChange={(e) => setFocus(e.target.value)} placeholder="e.g. spouse student loan interest" />
+        </div>
+        <button type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop: 12 }}>
+          {loading ? 'Comparing...' : 'Compare Scenarios'}
+        </button>
+      </form>
+
+      {error && <div className="alert alert-error">{error}</div>}
+
+      {result && (
+        <div className="card" style={{ padding: 24 }}>
+          <h3>Comparison</h3>
+          <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13, background: 'var(--background)', padding: 14, borderRadius: 8, overflow: 'auto' }}>
+            {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Apply pass 5 — backlog tools page (integrations, CPA, engagement letters, utilities).
+function BacklogToolsPage() {
+  const [tab, setTab] = useState('integrations');
+  return (
+    <div className="page">
+      <div className="page-header">
+        <h1>Backlog Tools</h1>
+        <p className="page-subtitle">Integrations, CPA workflow, engagement letters, mechanical utilities.</p>
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        {['integrations', 'cpa', 'engagement', 'utilities'].map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={tab === t ? 'btn btn-primary' : 'btn'}
+            style={{ padding: '6px 12px' }}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+      {tab === 'integrations' && <BacklogIntegrationsTab />}
+      {tab === 'cpa' && <BacklogCpaTab />}
+      {tab === 'engagement' && <BacklogEngagementTab />}
+      {tab === 'utilities' && <BacklogUtilitiesTab />}
+    </div>
+  );
+}
+
+function BacklogIntegrationsTab() {
+  const items = [
+    { key: 'irs', label: 'IRS e-file', endpoint: '/integrations/efile/irs', body: {} },
+    { key: 'state', label: 'State e-file', endpoint: '/integrations/efile/state', body: { state: 'CA' } },
+    { key: 'stripe', label: 'Stripe billing', endpoint: '/integrations/billing/stripe', body: {} },
+    { key: 'plaid', label: 'Plaid bank import', endpoint: '/integrations/bank/plaid', body: {} },
+    { key: 'docusign', label: 'DocuSign sign', endpoint: '/integrations/sign/docusign', body: {} },
+  ];
+  const [results, setResults] = useState({});
+  const test = async (i) => {
+    try {
+      const r = await api.post(i.endpoint, i.body);
+      setResults((s) => ({ ...s, [i.key]: { status: r.status, data: r.data } }));
+    } catch (e) {
+      setResults((s) => ({ ...s, [i.key]: { status: e.response?.status, data: e.response?.data || { error: e.message } } }));
+    }
+  };
+  return (
+    <div className="card" style={{ padding: 16 }}>
+      {items.map((i) => {
+        const r = results[i.key];
+        return (
+          <div key={i.key} style={{ marginBottom: 10 }}>
+            <button className="btn" onClick={() => test(i)} style={{ marginRight: 10 }}>{i.label}</button>
+            {r && r.status === 503 ? (
+              <span style={{ color: '#a36b00' }}>Configure {i.label} — missing: <code>{r.data?.missing}</code></span>
+            ) : r ? (
+              <code>{JSON.stringify(r.data)}</code>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function BacklogCpaTab() {
+  const [taxYearId, setTaxYearId] = useState('');
+  const [cpaEmail, setCpaEmail] = useState('');
+  const [cpaName, setCpaName] = useState('');
+  const [list, setList] = useState([]);
+  const load = async () => {
+    try { const r = await api.get('/cpa'); setList(r.data.assignments || []); } catch { setList([]); }
+  };
+  const assign = async () => {
+    await api.post('/cpa/assign', { tax_year_id: Number(taxYearId), cpa_email: cpaEmail, cpa_name: cpaName });
+    load();
+  };
+  return (
+    <div className="card" style={{ padding: 16 }}>
+      <button className="btn" onClick={load}>Load assignments</button>
+      <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <input className="form-input" style={{ width: 150 }} placeholder="tax year id" value={taxYearId} onChange={(e) => setTaxYearId(e.target.value)} />
+        <input className="form-input" style={{ width: 220 }} placeholder="CPA email" value={cpaEmail} onChange={(e) => setCpaEmail(e.target.value)} />
+        <input className="form-input" style={{ width: 220 }} placeholder="CPA name" value={cpaName} onChange={(e) => setCpaName(e.target.value)} />
+        <button className="btn btn-primary" onClick={assign}>Assign</button>
+      </div>
+      <ul style={{ marginTop: 12 }}>
+        {list.map((a) => <li key={a.id}>tax year {a.tax_year_id} → {a.cpa_email || '(no email)'} [{a.status}]</li>)}
+      </ul>
+    </div>
+  );
+}
+
+function BacklogEngagementTab() {
+  const [tplKey, setTplKey] = useState('individual_basic');
+  const [clientName, setClientName] = useState('Client Name');
+  const [taxYear, setTaxYear] = useState('2024');
+  const [fee, setFee] = useState('$500');
+  const [firm, setFirm] = useState('Acme CPAs');
+  const [out, setOut] = useState(null);
+  const render = async () => {
+    try { const r = await api.post('/engagement/render', { template_key: tplKey, client_name: clientName, tax_year: taxYear, fee, firm }); setOut(r.data); } catch (e) { setOut({ error: e.message }); }
+  };
+  return (
+    <div className="card" style={{ padding: 16 }}>
+      <select className="form-input" value={tplKey} onChange={(e) => setTplKey(e.target.value)}>
+        <option value="individual_basic">Individual — Basic</option>
+        <option value="individual_complex">Individual — Complex</option>
+        <option value="business">Business Entity</option>
+      </select>
+      <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+        <input className="form-input" placeholder="Client name" value={clientName} onChange={(e) => setClientName(e.target.value)} />
+        <input className="form-input" placeholder="Tax year" value={taxYear} onChange={(e) => setTaxYear(e.target.value)} />
+        <input className="form-input" placeholder="Fee" value={fee} onChange={(e) => setFee(e.target.value)} />
+        <input className="form-input" placeholder="Firm" value={firm} onChange={(e) => setFirm(e.target.value)} />
+      </div>
+      <button className="btn btn-primary" onClick={render} style={{ marginTop: 8 }}>Render letter</button>
+      {out && (
+        <pre style={{ background: 'var(--background)', padding: 12, marginTop: 12, whiteSpace: 'pre-wrap' }}>
+          {out.letter ? out.letter.rendered : JSON.stringify(out)}
+        </pre>
+      )}
+    </div>
+  );
+}
+
+function BacklogUtilitiesTab() {
+  const [doc, setDoc] = useState('Form W-2 Wage and Tax Statement');
+  const [docResult, setDocResult] = useState(null);
+  const tagDoc = async () => {
+    try { const r = await api.post('/utilities/auto-categorize', { text: doc }); setDocResult(r.data); } catch { setDocResult(null); }
+  };
+  const [scenarioJson, setScenarioJson] = useState(JSON.stringify({ scenarios: [{ name: 'baseline', taxable_income: 100000, federal_tax: 18000, state_tax: 5000 }, { name: 'plan_a', taxable_income: 95000, federal_tax: 16000, state_tax: 4500 }] }, null, 2));
+  const [vizResult, setVizResult] = useState(null);
+  const visualize = async () => {
+    try { const r = await api.post('/utilities/visualization', JSON.parse(scenarioJson)); setVizResult(r.data); } catch { setVizResult(null); }
+  };
+  return (
+    <div className="card" style={{ padding: 16 }}>
+      <h4>Document categorizer</h4>
+      <textarea className="form-input" rows={3} value={doc} onChange={(e) => setDoc(e.target.value)} />
+      <button className="btn" onClick={tagDoc}>Categorize</button>
+      {docResult && <pre style={{ marginTop: 8 }}>{JSON.stringify(docResult, null, 2)}</pre>}
+      <hr style={{ margin: '20px 0' }} />
+      <h4>Tax plan visualization</h4>
+      <textarea className="form-input" rows={6} value={scenarioJson} onChange={(e) => setScenarioJson(e.target.value)} />
+      <button className="btn" onClick={visualize}>Visualize</button>
+      {vizResult && <pre style={{ marginTop: 8 }}>{JSON.stringify(vizResult, null, 2)}</pre>}
+    </div>
+  );
+}
+
 // Main App
 function App() {
   return (
@@ -5743,7 +6277,29 @@ function App() {
               <Route path="/audit-risk" element={<ProtectedRoute><Layout><AuditRiskPage /></Layout></ProtectedRoute>} />
               <Route path="/receipt-scanner" element={<ProtectedRoute><Layout><ReceiptScannerPage /></Layout></ProtectedRoute>} />
               <Route path="/estimated-taxes" element={<ProtectedRoute><Layout><EstimatedTaxPage /></Layout></ProtectedRoute>} />
-            </Routes>
+              <Route path="/state-tax-optimize" element={<ProtectedRoute><Layout><StateTaxOptimizePage /></Layout></ProtectedRoute>} />
+              <Route path="/estimated-payments-ai" element={<ProtectedRoute><Layout><EstimatedPaymentsAIPage /></Layout></ProtectedRoute>} />
+              <Route path="/yoy-anomaly" element={<ProtectedRoute><Layout><YoYAnomalyPage /></Layout></ProtectedRoute>} />
+              <Route path="/filing-scenario-compare" element={<ProtectedRoute><Layout><FilingScenarioComparePage /></Layout></ProtectedRoute>} />
+              <Route path="/backlog-tools" element={<ProtectedRoute><Layout><BacklogToolsPage /></Layout></ProtectedRoute>} />
+            {/* // === Batch 08 Gaps & Frontend Mounts === */}
+      <Route path="/cf-tax-optimization-scenarios-mfj-vs-mfs-hoh-with" element={<ProtectedRoute><CfTaxOptimizationScenariosMfjVsMfsHoh /></ProtectedRoute>} />
+      <Route path="/cf-estimated-tax-planning-with-quarterly-payment-recommendations" element={<ProtectedRoute><CfEstimatedTaxPlanningWithQuarterlyPaymentRecommendations /></ProtectedRoute>} />
+      <Route path="/cf-multi-state-tax-planning-for-state-specific-deductions-and-credits" element={<ProtectedRoute><CfMultiStateTaxPlanningForStateSpecific /></ProtectedRoute>} />
+      <Route path="/cf-document-auto-categorization-via-receipt-ocr-ml" element={<ProtectedRoute><CfDocumentAutoCategorizationViaReceiptOcrMl /></ProtectedRoute>} />
+      <Route path="/cf-engagement-letter-e-sign-with-scope-fees" element={<ProtectedRoute><CfEngagementLetterESignWithScopeFees /></ProtectedRoute>} />
+      <Route path="/cf-irs-notice-cp-1099-letter-auto-response-drafter" element={<ProtectedRoute><CfIrsNoticeCp1099LetterAutoResponse /></ProtectedRoute>} />
+      <Route path="/gap-no-state-local-tax-optimization-ai" element={<ProtectedRoute><GapNoStateLocalTaxOptimizationAi /></ProtectedRoute>} />
+      <Route path="/gap-no-estimated-payment-planning-ai" element={<ProtectedRoute><GapNoEstimatedPaymentPlanningAi /></ProtectedRoute>} />
+      <Route path="/gap-no-automated-audit-risk-early-warning-monitor" element={<ProtectedRoute><GapNoAutomatedAuditRiskEarlyWarningMonitor /></ProtectedRoute>} />
+      <Route path="/gap-no-e-filing-integration-efin-irs-mef" element={<ProtectedRoute><GapNoEFilingIntegrationEfinIrsMef /></ProtectedRoute>} />
+      <Route path="/gap-limited-cpa-coordination-beyond-engagement-letters" element={<ProtectedRoute><GapLimitedCpaCoordinationBeyondEngagementLetters /></ProtectedRoute>} />
+      <Route path="/gap-no-tax-plan-comparison-standard-vs-itemized-visualizations" element={<ProtectedRoute><GapNoTaxPlanComparisonStandardVsItemized /></ProtectedRoute>} />
+      <Route path="/gap-no-year-over-year-comparison-and-anomaly-detection" element={<ProtectedRoute><GapNoYearOverYearComparisonAndAnomaly /></ProtectedRoute>} />
+      <Route path="/gap-no-webhooks-notifications-system" element={<ProtectedRoute><GapNoWebhooksNotificationsSystem /></ProtectedRoute>} />
+      <Route path="/gap-no-audit-log-subsystem" element={<ProtectedRoute><GapNoAuditLogSubsystem /></ProtectedRoute>} />
+      <Route path="/gap-limited-integrations-module-exists-but-not-deeply-wired" element={<ProtectedRoute><GapLimitedIntegrationsModuleExistsButNotDeeply /></ProtectedRoute>} />
+      </Routes>
           </ToastProvider>
         </AuthProvider>
       </ErrorBoundary>

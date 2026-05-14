@@ -66,6 +66,10 @@ app.use('/api/forms', formRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/advanced', advancedRoutes);
 app.use('/api/ai-features', aiFeaturesRoutes);
+app.use('/api/integrations', require('./routes/integrations'));
+app.use('/api/cpa', require('./routes/cpaWorkflow'));
+app.use('/api/engagement', require('./routes/engagementLetters'));
+app.use('/api/utilities', require('./routes/utilities'));
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -87,6 +91,20 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5001;
+app.use('/api/tax-scenarios', require('./routes/taxScenarios')); app.use('/api/estimated-tax-planner', require('./routes/estimatedTaxPlanner')); app.use('/api/multi-state-planner', require('./routes/multiStatePlanner')); app.use('/api/document-auto-categorize', require('./routes/documentAutoCategorize')); app.use('/api/engagement-esign', require('./routes/engagementEsign')); app.use('/api/irs-notice-responder', require('./routes/irsNoticeResponder'));
+
+// === Batch 08 Gaps & Frontend Mounts ===
+app.use('/api/gap-no-state-local-tax-optimization-ai', require('./routes/gapNoStateLocalTaxOptimizationAi'));
+app.use('/api/gap-no-estimated-payment-planning-ai', require('./routes/gapNoEstimatedPaymentPlanningAi'));
+app.use('/api/gap-no-automated-audit-risk-early-warning-monitor', require('./routes/gapNoAutomatedAuditRiskEarlyWarningMonitor'));
+app.use('/api/gap-no-e-filing-integration-efin-irs-mef', require('./routes/gapNoEFilingIntegrationEfinIrsMef'));
+app.use('/api/gap-limited-cpa-coordination-beyond-engagement-letters', require('./routes/gapLimitedCpaCoordinationBeyondEngagementLetters'));
+app.use('/api/gap-no-tax-plan-comparison-standard-vs-itemized-visualizations', require('./routes/gapNoTaxPlanComparisonStandardVsItemizedVisualizations'));
+app.use('/api/gap-no-year-over-year-comparison-and-anomaly-detection', require('./routes/gapNoYearOverYearComparisonAndAnomalyDetection'));
+app.use('/api/gap-no-webhooks-notifications-system', require('./routes/gapNoWebhooksNotificationsSystem'));
+app.use('/api/gap-no-audit-log-subsystem', require('./routes/gapNoAuditLogSubsystem'));
+app.use('/api/gap-limited-integrations-module-exists-but-not-deeply-wired', require('./routes/gapLimitedIntegrationsModuleExistsButNotDeeplyWired'));
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`API available at http://localhost:${PORT}/api`);
