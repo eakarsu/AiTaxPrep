@@ -92,6 +92,7 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5001;
 app.use('/api/tax-scenarios', require('./routes/taxScenarios')); app.use('/api/estimated-tax-planner', require('./routes/estimatedTaxPlanner')); app.use('/api/multi-state-planner', require('./routes/multiStatePlanner')); app.use('/api/document-auto-categorize', require('./routes/documentAutoCategorize')); app.use('/api/engagement-esign', require('./routes/engagementEsign')); app.use('/api/irs-notice-responder', require('./routes/irsNoticeResponder'));
+app.use('/api/k1-intake-review', require('./routes/k1IntakeReview'));
 
 // === Batch 08 Gaps & Frontend Mounts ===
 app.use('/api/gap-no-state-local-tax-optimization-ai', require('./routes/gapNoStateLocalTaxOptimizationAi'));

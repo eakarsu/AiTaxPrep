@@ -1,6 +1,9 @@
 import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import CodexCustomVizFeature from './pages/CodexCustomVizFeature';
+import CodexOperationsFeature from './pages/CodexOperationsFeature';
+
 // === Batch 08 Gaps & Frontend Mounts ===
 import CfTaxOptimizationScenariosMfjVsMfsHoh from './pages/CfTaxOptimizationScenariosMfjVsMfsHoh'
 import CfEstimatedTaxPlanningWithQuarterlyPaymentRecommendations from './pages/CfEstimatedTaxPlanningWithQuarterlyPaymentRecommendations'
@@ -18,6 +21,7 @@ import GapNoYearOverYearComparisonAndAnomaly from './pages/GapNoYearOverYearComp
 import GapNoWebhooksNotificationsSystem from './pages/GapNoWebhooksNotificationsSystem'
 import GapNoAuditLogSubsystem from './pages/GapNoAuditLogSubsystem'
 import GapLimitedIntegrationsModuleExistsButNotDeeply from './pages/GapLimitedIntegrationsModuleExistsButNotDeeply'
+import K1IntakeReview from './pages/K1IntakeReview'
 
 // API Configuration
 const api = axios.create({
@@ -414,6 +418,7 @@ function Layout({ children }) {
     { path: '/tax-planning', icon: '📈', label: 'Tax Planning' },
     { path: '/state-returns', icon: '🗺️', label: 'State Returns' },
     { path: '/state-tax-optimize', icon: '🏛️', label: 'State Tax Optimizer' },
+    { path: '/k1-intake-review', icon: '📑', label: 'K-1 Intake Review' },
     { path: '/estimated-payments-ai', icon: '💸', label: 'Estimated Payments (AI)' },
     { path: '/yoy-anomaly', icon: '📈', label: 'YoY Anomaly Detector' },
     { path: '/filing-scenario-compare', icon: '⚖️', label: 'Filing Scenarios' },
@@ -6249,6 +6254,9 @@ function App() {
         <AuthProvider>
           <ToastProvider>
             <Routes>
+        <Route path="/codex/custom-viz" element={<ProtectedRoute><CodexCustomVizFeature /></ProtectedRoute>} />
+        <Route path="/codex/operations" element={<ProtectedRoute><CodexOperationsFeature /></ProtectedRoute>} />
+
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -6278,6 +6286,7 @@ function App() {
               <Route path="/receipt-scanner" element={<ProtectedRoute><Layout><ReceiptScannerPage /></Layout></ProtectedRoute>} />
               <Route path="/estimated-taxes" element={<ProtectedRoute><Layout><EstimatedTaxPage /></Layout></ProtectedRoute>} />
               <Route path="/state-tax-optimize" element={<ProtectedRoute><Layout><StateTaxOptimizePage /></Layout></ProtectedRoute>} />
+              <Route path="/k1-intake-review" element={<ProtectedRoute><Layout><K1IntakeReview /></Layout></ProtectedRoute>} />
               <Route path="/estimated-payments-ai" element={<ProtectedRoute><Layout><EstimatedPaymentsAIPage /></Layout></ProtectedRoute>} />
               <Route path="/yoy-anomaly" element={<ProtectedRoute><Layout><YoYAnomalyPage /></Layout></ProtectedRoute>} />
               <Route path="/filing-scenario-compare" element={<ProtectedRoute><Layout><FilingScenarioComparePage /></Layout></ProtectedRoute>} />
