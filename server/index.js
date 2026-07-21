@@ -2,10 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const helmet = require('helmet');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
 const { sanitizeMiddleware } = require('./middleware/sanitize');
+const governanceRouter = require('./governance');
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -25,6 +27,16 @@ const advancedRoutes = require('./routes/advanced');
 const aiFeaturesRoutes = require('./routes/ai-features');
 
 const app = express();
+const signedAccess = (req, res, next) => {
+  const secret = process.env.JWT_SECRET || '';
+  const token = req.headers.authorization && req.headers.authorization.match(/^Bearer (.+)$/)?.[1];
+  if (secret.length < 32) return res.status(503).json({ error: 'secure JWT configuration required' });
+  try {
+    const claims = jwt.verify(token || '', secret, { algorithms: ['HS256'] });
+    if (!claims.tenantId || !claims.role || !Array.isArray(claims.subjectIds)) throw new Error('claims');
+    req.user = claims; return next();
+  } catch (_) { return res.status(401).json({ error: 'signed tenant, role, and subject scope required' }); }
+};
 
 // Security headers via helmet
 app.use(helmet({
@@ -45,12 +57,15 @@ app.use('/api', apiLimiter);
 
 // Stricter rate limiting on auth routes
 app.use('/api/auth', authLimiter);
+app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
 // Static files for uploads
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', signedAccess, express.static(path.join(__dirname, '../uploads')));
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/governance', governanceRouter);
+app.use('/api', signedAccess);
 app.use('/api/users', userRoutes);
 app.use('/api/tax-years', taxYearRoutes);
 app.use('/api/income', incomeRoutes);
@@ -91,20 +106,12 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5001;
-app.use('/api/tax-scenarios', require('./routes/taxScenarios')); app.use('/api/estimated-tax-planner', require('./routes/estimatedTaxPlanner')); app.use('/api/multi-state-planner', require('./routes/multiStatePlanner')); app.use('/api/document-auto-categorize', require('./routes/documentAutoCategorize')); app.use('/api/engagement-esign', require('./routes/engagementEsign')); app.use('/api/irs-notice-responder', require('./routes/irsNoticeResponder'));
-app.use('/api/k1-intake-review', require('./routes/k1IntakeReview'));
-
-// === Batch 08 Gaps & Frontend Mounts ===
-app.use('/api/gap-no-state-local-tax-optimization-ai', require('./routes/gapNoStateLocalTaxOptimizationAi'));
-app.use('/api/gap-no-estimated-payment-planning-ai', require('./routes/gapNoEstimatedPaymentPlanningAi'));
-app.use('/api/gap-no-automated-audit-risk-early-warning-monitor', require('./routes/gapNoAutomatedAuditRiskEarlyWarningMonitor'));
-app.use('/api/gap-no-e-filing-integration-efin-irs-mef', require('./routes/gapNoEFilingIntegrationEfinIrsMef'));
-app.use('/api/gap-limited-cpa-coordination-beyond-engagement-letters', require('./routes/gapLimitedCpaCoordinationBeyondEngagementLetters'));
-app.use('/api/gap-no-tax-plan-comparison-standard-vs-itemized-visualizations', require('./routes/gapNoTaxPlanComparisonStandardVsItemizedVisualizations'));
-app.use('/api/gap-no-year-over-year-comparison-and-anomaly-detection', require('./routes/gapNoYearOverYearComparisonAndAnomalyDetection'));
-app.use('/api/gap-no-webhooks-notifications-system', require('./routes/gapNoWebhooksNotificationsSystem'));
-app.use('/api/gap-no-audit-log-subsystem', require('./routes/gapNoAuditLogSubsystem'));
-app.use('/api/gap-limited-integrations-module-exists-but-not-deeply-wired', require('./routes/gapLimitedIntegrationsModuleExistsButNotDeeplyWired'));
+if (process.env.ENABLE_GENERATED_FEATURES === 'true' && process.env.NODE_ENV !== 'production') {
+  app.use('/api/generated/tax-scenarios', require('./routes/taxScenarios'));
+  app.use('/api/generated/estimated-tax-planner', require('./routes/estimatedTaxPlanner'));
+  app.use('/api/generated/multi-state-planner', require('./routes/multiStatePlanner'));
+  app.use('/api/generated/document-auto-categorize', require('./routes/documentAutoCategorize'));
+}
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

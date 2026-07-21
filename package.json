@@ -10,6 +10,7 @@
     "client": "cd client && npm start",
     "db:migrate": "node server/db/migrate.js",
     "db:seed": "node server/db/seed.js",
+    "create-admin": "node server/scripts/create-admin.js",
     "db:reset": "node server/db/reset.js",
     "setup": "npm install && cd client && npm install && cd .. && npm run db:migrate && npm run db:seed"
   },

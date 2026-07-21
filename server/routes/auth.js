@@ -79,7 +79,7 @@ router.post('/register', validateRegistration, handleValidationErrors, async (re
     );
 
     // Generate token
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ sub: String(user.id), userId: user.id, role: user.role || 'user', tenantId: process.env.GOVERNANCE_TENANT_ID, subjectIds: [`taxpayer:${user.id}`] }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '24h' });
 
     // Log registration
     await db.query(
@@ -104,7 +104,6 @@ router.post('/register', validateRegistration, handleValidationErrors, async (re
         lastName: user.last_name,
         role: user.role
       },
-      verificationToken,
       emailVerificationRequired: true
     });
   } catch (error) {
@@ -168,7 +167,7 @@ router.post('/login', validateLogin, handleValidationErrors, async (req, res) =>
     );
 
     // Generate token
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ sub: String(user.id), userId: user.id, role: user.role || 'user', tenantId: process.env.GOVERNANCE_TENANT_ID, subjectIds: [`taxpayer:${user.id}`] }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '24h' });
 
     // Log login
     await db.query(
