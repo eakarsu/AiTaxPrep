@@ -66,6 +66,7 @@ app.use('/uploads', signedAccess, express.static(path.join(__dirname, '../upload
 app.use('/api/auth', authRoutes);
 app.use('/api/governance', governanceRouter);
 app.use('/api', signedAccess);
+app.use('/api/runtime-ai', require('./routes/runtimeAi'));
 app.use('/api/users', userRoutes);
 app.use('/api/tax-years', taxYearRoutes);
 app.use('/api/income', incomeRoutes);
