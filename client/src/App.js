@@ -522,7 +522,7 @@ function LoginPage() {
           Password: password123
           <button
             type="button"
-            onClick={() => { setEmail('john.doe@email.com'); setPassword('password123'); }}
+            onClick={() => { setEmail(process.env.REACT_APP_DEMO_EMAIL || ''); setPassword(process.env.REACT_APP_DEMO_PASSWORD || ''); }}
             className="btn btn-secondary"
             style={{width: '100%', marginTop: '12px', fontSize: '13px'}}
           >

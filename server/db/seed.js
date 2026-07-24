@@ -2,6 +2,12 @@ const { pool } = require('../config/database');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
+function requireDemoPassword() {
+  const password = process.env.DEMO_PASSWORD || process.env.SEED_DEMO_PASSWORD || process.env.DEMO_SEED_PASSWORD || '';
+  if (password.length < 12 || password.length > 1024) throw new Error('DEMO_PASSWORD must contain 12-1024 characters');
+  return password;
+}
+
 async function seed() {
   try {
     console.log('Seeding database...');
@@ -9,7 +15,7 @@ async function seed() {
     // Seed Users (15 users)
     const users = [];
     const userPasswords = await Promise.all(
-      Array(15).fill(null).map(() => bcrypt.hash('password123', 10))
+      Array(15).fill(null).map(() => bcrypt.hash(requireDemoPassword(), 10))
     );
 
     const userInserts = [
@@ -415,7 +421,7 @@ async function seed() {
     console.log('- Documents: 16');
     console.log('- Tax Forms: 15');
     console.log('- Audit Log: 16');
-    console.log('\nTest Login: email: john.doe@email.com, password: password123');
+    console.log('Demo login users provisioned from the local environment.');
 
     process.exit(0);
   } catch (error) {
