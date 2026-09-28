@@ -526,7 +526,7 @@ function LoginPage() {
             className="btn btn-secondary"
             style={{width: '100%', marginTop: '12px', fontSize: '13px'}}
           >
-            Fill Demo Credentials
+            Auto Fill Demo Credentials
           </button>
         </div>
       </div>
