@@ -1,0 +1,114 @@
+[
+  {
+    "name": "CfDocumentAutoCategorizationViaReceiptOcrMl",
+    "id": "cf-document-auto-categorization-via-receipt-ocr-ml/history",
+    "title": "Document auto-categorization via receipt OCR + ML",
+    "description": "Prepare a professional advisory report for document auto-categorization via receipt ocr + ml using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "CfEngagementLetterESignWithScopeFees",
+    "id": "cf-engagement-letter-e-sign-with-scope-fees/history",
+    "title": "Engagement letter e-sign with scope/fees",
+    "description": "Prepare a professional advisory report for engagement letter e-sign with scope/fees using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "CfEstimatedTaxPlanningWithQuarterlyPaymentRecommendations",
+    "id": "cf-estimated-tax-planning-with-quarterly-payment-recommendations/history",
+    "title": "Estimated tax planning with quarterly payment recommendations",
+    "description": "Prepare a professional advisory report for estimated tax planning with quarterly payment recommendations using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "CfIrsNoticeCp1099LetterAutoResponse",
+    "id": "cf-irs-notice-cp-1099-letter-auto-response-drafter/history",
+    "title": "IRS notice (CP/1099-Letter) auto-response drafter",
+    "description": "Prepare a professional advisory report for irs notice (cp/1099-letter) auto-response drafter using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "CfMultiStateTaxPlanningForStateSpecific",
+    "id": "cf-multi-state-tax-planning-for-state-specific-deductions-and-credits/history",
+    "title": "Multi-state tax planning for state-specific deductions and credits",
+    "description": "Prepare a professional advisory report for multi-state tax planning for state-specific deductions and credits using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "CfTaxOptimizationScenariosMfjVsMfsHoh",
+    "id": "cf-tax-optimization-scenarios-mfj-vs-mfs-hoh-with/history",
+    "title": "Tax optimization scenarios (MFJ vs MFS, HOH) with outcome comparison",
+    "description": "Prepare a professional advisory report for tax optimization scenarios (mfj vs mfs, hoh) with outcome comparison using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "GapLimitedCpaCoordinationBeyondEngagementLetters",
+    "id": "gap-limited-cpa-coordination-beyond-engagement-letters/history",
+    "title": "Limited CPA coordination beyond engagement letters",
+    "description": "Prepare a professional advisory report for limited cpa coordination beyond engagement letters using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "GapLimitedIntegrationsModuleExistsButNotDeeply",
+    "id": "gap-limited-integrations-module-exists-but-not-deeply-wired/history",
+    "title": "Limited integrations (module exists but not deeply wired)",
+    "description": "Prepare a professional advisory report for limited integrations (module exists but not deeply wired) using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "GapNoAuditLogSubsystem",
+    "id": "gap-no-audit-log-subsystem/history",
+    "title": "No audit log subsystem",
+    "description": "Prepare a professional advisory report for no audit log subsystem using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "GapNoAutomatedAuditRiskEarlyWarningMonitor",
+    "id": "gap-no-automated-audit-risk-early-warning-monitor/history",
+    "title": "No automated audit-risk early-warning monitor",
+    "description": "Prepare a professional advisory report for no automated audit-risk early-warning monitor using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "GapNoEFilingIntegrationEfinIrsMef",
+    "id": "gap-no-e-filing-integration-efin-irs-mef/history",
+    "title": "No e-filing integration (EFIN, IRS MeF)",
+    "description": "Prepare a professional advisory report for no e-filing integration (efin, irs mef) using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "GapNoEstimatedPaymentPlanningAi",
+    "id": "gap-no-estimated-payment-planning-ai/history",
+    "title": "No estimated payment planning AI",
+    "description": "Prepare a professional advisory report for no estimated payment planning ai using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "GapNoStateLocalTaxOptimizationAi",
+    "id": "gap-no-state-local-tax-optimization-ai/history",
+    "title": "No state/local tax optimization AI",
+    "description": "Prepare a professional advisory report for no state/local tax optimization ai using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "GapNoTaxPlanComparisonStandardVsItemized",
+    "id": "gap-no-tax-plan-comparison-standard-vs-itemized-visualizations/history",
+    "title": "No tax plan comparison (standard vs itemized visualizations)",
+    "description": "Prepare a professional advisory report for no tax plan comparison (standard vs itemized visualizations) using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "GapNoWebhooksNotificationsSystem",
+    "id": "gap-no-webhooks-notifications-system/history",
+    "title": "No webhooks/notifications system",
+    "description": "Prepare a professional advisory report for no webhooks/notifications system using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  },
+  {
+    "name": "GapNoYearOverYearComparisonAndAnomaly",
+    "id": "gap-no-year-over-year-comparison-and-anomaly-detection/history",
+    "title": "No year-over-year comparison and anomaly detection",
+    "description": "Prepare a professional advisory report for no year-over-year comparison and anomaly detection using the brief and evidence you provide. Review the findings, assumptions, and action plan before applying changes.",
+    "samples": []
+  }
+]

@@ -1,3 +1,5 @@
+import AIReportLibrary from "./components/AIReportLibrary";
+import AIReport from './components/AIReport';
 import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -463,7 +465,7 @@ function Layout({ children }) {
             Logout
           </button>
         </div>
-      </aside>
+      <AIReportLibrary /></aside>
       <main className="main-content">{children}</main>
     </div>
   );
@@ -517,17 +519,13 @@ function LoginPage() {
           Don't have an account? <Link to="/register">Sign up</Link>
         </div>
         <div style={{marginTop: '16px', padding: '12px', background: '#f0f9ff', borderRadius: '8px', fontSize: '13px'}}>
-          <strong>Demo Login:</strong><br/>
-          Email: john.doe@email.com<br/>
-          Password: password123
-          <button
-            type="button"
-            onClick={() => { setEmail(process.env.REACT_APP_DEMO_EMAIL || ''); setPassword(process.env.REACT_APP_DEMO_PASSWORD || ''); }}
-            className="btn btn-secondary"
-            style={{width: '100%', marginTop: '12px', fontSize: '13px'}}
-          >
-            Auto Fill Demo Credentials
-          </button>
+          <strong>Demo account</strong>
+          <button type="button" className="btn btn-secondary" style={{width: '100%', marginTop: '12px'}} onClick={() => {
+            const demoEmail = process.env.REACT_APP_DEMO_EMAIL;
+            const demoPassword = process.env.REACT_APP_DEMO_PASSWORD;
+            if (!demoEmail || !demoPassword) { setError('Demo credentials are unavailable in this client build. Ask the administrator to configure the demo account.'); return; }
+            setEmail(demoEmail); setPassword(demoPassword); setError('');
+          }}>Fill demo credentials</button>
         </div>
       </div>
     </div>
@@ -3307,11 +3305,9 @@ function AIChatPage() {
   };
 
   const quickQuestions = [
-    "What deductions am I missing?",
-    "How can I reduce my tax liability?",
-    "Explain the difference between tax credits and deductions",
-    "What is my estimated tax refund?",
-    "Should I itemize or take the standard deduction?"
+    "For my selected tax year, which deductions should I review given my recorded income and expenses? List missing evidence.",
+    "Compare the standard and itemized deduction for my selected tax year; explain any missing inputs.",
+    "Explain estimated payment options using my selected tax year and flag assumptions."
   ];
 
   return (
@@ -3346,7 +3342,7 @@ function AIChatPage() {
                 background: msg.role === 'user' ? 'var(--primary)' : 'var(--background)',
                 color: msg.role === 'user' ? 'white' : 'inherit'
               }}>
-                {msg.content}
+                {msg.role === 'assistant' ? <AIReport response={msg.content} title="Tax assistant answer" /> : msg.content}
               </div>
             ))
           )}
@@ -3357,19 +3353,23 @@ function AIChatPage() {
           )}
         </div>
 
-        <div style={{borderTop: '1px solid var(--border)', padding: '16px', display: 'flex', gap: '12px'}}>
-          <input
-            type="text"
-            className="form-input"
-            placeholder="Ask a tax question..."
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyPress={e => e.key === 'Enter' && sendMessage()}
-            disabled={loading}
-          />
-          <button className="btn btn-primary" onClick={sendMessage} disabled={loading || !input.trim()}>
-            Send
-          </button>
+        <div style={{borderTop: '1px solid var(--border)', padding: '16px'}}>
+          {messages.length > 0 && <div className="ai-actions" style={{marginBottom: 12}}>{quickQuestions.map((q, i) => <button type="button" key={i} className="btn btn-secondary btn-sm" onClick={() => setInput(q)} disabled={loading}>{q}</button>)}</div>}
+          {!selectedYear && <p className="ai-muted">Select an existing tax year for questions about your records.</p>}
+          <div style={{display: 'flex', gap: '12px'}}>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Ask a tax question..."
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyPress={e => e.key === 'Enter' && sendMessage()}
+              disabled={loading}
+            />
+            <button className="btn btn-primary" onClick={sendMessage} disabled={loading || !input.trim()}>
+              Send
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -3492,6 +3492,7 @@ function ScanDocumentPage() {
               </>
             )}
           </div>
+          <NativeAIPresets examples={[{label: 'W-2', values: 'W-2'}, {label: '1099-NEC', values: '1099-NEC'}, {label: 'Receipt', values: 'Receipt'}]} onFill={setDocumentType} prerequisite={!file ? 'Upload a genuine document before scanning.' : 'Your uploaded document is preserved.'} />
           <input type="file" id="fileInput" accept="image/*,.pdf" style={{display: 'none'}} onChange={handleFileChange} />
 
           <button className="btn btn-primary" style={{width: '100%'}} onClick={scanDocument} disabled={!file || scanning}>
@@ -3518,16 +3519,7 @@ function ScanDocumentPage() {
                 </span>
               </div>
 
-              <table className="table">
-                <tbody>
-                  {Object.entries(result.extractedData || {}).filter(([k]) => k !== 'confidence').map(([key, value]) => (
-                    <tr key={key}>
-                      <td style={{fontWeight: '600', textTransform: 'capitalize'}}>{key.replace(/([A-Z])/g, ' $1')}</td>
-                      <td>{typeof value === 'number' ? `$${value.toLocaleString()}` : String(value)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <AIReport response={Object.fromEntries(Object.entries(result.extractedData || {}).filter(([key]) => key !== 'confidence'))} title="Extracted document data" />
 
               <button className="btn btn-success" style={{width: '100%', marginTop: '20px'}} onClick={importData} disabled={importing}>
                 {importing ? 'Importing...' : 'Import to Tax Return'}
@@ -3615,6 +3607,7 @@ function DeductionFinderPage() {
             ))}
           </div>
 
+          <NativeAIPresets examples={[{label: 'Homeowner', values: [true, true, false, true, false, false]}, {label: 'Student', values: [false, false, true, false, true, true]}, {label: 'Family', values: [true, false, true, true, true, true]}]} onFill={(values) => setAdditionalInfo(Object.fromEntries(Object.keys(additionalInfo).map((key, index) => [key, values[index]])))} prerequisite={!selectedYear ? 'Select an existing tax year before analysis.' : ''} />
           <button className="btn btn-primary" style={{width: '100%', marginTop: '24px'}} onClick={findDeductions} disabled={loading}>
             {loading ? 'Analyzing with AI...' : 'Find Missed Deductions'}
           </button>
@@ -3665,6 +3658,7 @@ function DeductionFinderPage() {
                   </ul>
                 </div>
               )}
+              <AIReport response={result} title="Deduction analysis" />
             </>
           )}
         </div>
@@ -4371,6 +4365,7 @@ function TaxPlanningPage() {
             </select>
           </div>
 
+          <NativeAIPresets examples={[{label: 'Retirement review', values: {name: 'Retirement contribution review', type: 'retirement_contribution', parameters: {income: '95000', filingStatus: 'single', age: '42'}}}, {label: 'Joint retirement', values: {name: 'Joint filer retirement review', type: 'retirement_contribution', parameters: {income: '165000', filingStatus: 'married_filing_jointly', age: '53'}}}, {label: 'HSA review', values: {name: 'HSA contribution review', type: 'hsa_contribution', parameters: {}}}]} onFill={setScenarioForm} prerequisite={!selectedYear ? 'Select an existing tax year before analysis.' : ''} />
           {scenarioForm.type === 'retirement_contribution' && (
             <>
               <div className="form-group">
@@ -5349,6 +5344,7 @@ function EstimatedTaxPage() {
               <label className="form-label">Estimated Deductions (optional)</label>
               <input type="number" className="form-input" placeholder="Leave blank to use standard deduction" value={form.estimatedDeductions} onChange={e => setForm({...form, estimatedDeductions: e.target.value})} />
             </div>
+            <NativeAIPresets examples={[{label: 'Salaried household', values: {estimatedAnnualIncome: '92000', estimatedDeductions: '15000'}}, {label: 'Self employment', values: {estimatedAnnualIncome: '145000', estimatedDeductions: '28000'}}, {label: 'Part time income', values: {estimatedAnnualIncome: '48000', estimatedDeductions: '8500'}}]} onFill={setForm} prerequisite={!selectedYear ? 'Select an existing tax year before calculating.' : ''} />
             <button className="btn btn-primary" style={{width: '100%'}} onClick={calculateEstimates} disabled={calculating}>
               {calculating ? 'Calculating...' : 'Calculate Quarterly Payments'}
             </button>
@@ -5733,6 +5729,10 @@ function ReceiptScannerPage() {
   );
 }
 
+function NativeAIPresets({ examples, onFill, prerequisite }) {
+  return <div className="ai-preset-bar"><div><strong>Example inputs</strong><p>Fill fields, then review before generating.{prerequisite ? ` ${prerequisite}` : ''}</p></div><div className="ai-actions">{examples.map((example) => <button type="button" className="btn btn-secondary" key={example.label} onClick={() => onFill(example.values)}>{example.label}</button>)}</div></div>;
+}
+
 // ============================================================
 // STATE TAX OPTIMIZATION PAGE
 // ============================================================
@@ -5793,6 +5793,7 @@ function StateTaxOptimizePage() {
             </select>
           </div>
         </div>
+        <NativeAIPresets examples={[{label: 'New York resident', values: {state: 'NY'}}, {label: 'California resident', values: {state: 'CA'}}, {label: 'Texas resident', values: {state: 'TX'}}]} onFill={(values) => setState(values.state)} prerequisite={!selectedYear ? 'Select an existing tax year if this analysis requires one.' : ''} />
         <button type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop: 12 }}>
           {loading ? 'Analyzing...' : 'Optimize State Tax'}
         </button>
@@ -5800,14 +5801,7 @@ function StateTaxOptimizePage() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      {result && (
-        <div className="card" style={{ padding: 24 }}>
-          <h3>Optimization Result</h3>
-          <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13, background: 'var(--background)', padding: 14, borderRadius: 8, overflow: 'auto' }}>
-            {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
-          </pre>
-        </div>
-      )}
+      {result && <AIReport response={result} title="State tax optimization" />}
     </div>
   );
 }
@@ -5882,6 +5876,7 @@ function EstimatedPaymentsAIPage() {
             <input type="number" className="form-input" value={annualIncome} onChange={(e) => setAnnualIncome(e.target.value)} placeholder="120000" />
           </div>
         </div>
+        <NativeAIPresets examples={[{label: 'Safe harbor', values: {strategy: 'safe-harbor', income: '120000'}}, {label: 'Current year', values: {strategy: 'current-year', income: '85000'}}, {label: 'Annualized income', values: {strategy: 'annualized', income: '150000'}}]} onFill={(values) => { setStrategy(values.strategy); setAnnualIncome(values.income); }} prerequisite={!selectedYear ? 'Select an existing tax year if this plan requires one.' : ''} />
         <button type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop: 12 }}>
           {loading ? 'Planning...' : 'Generate Plan'}
         </button>
@@ -5889,14 +5884,7 @@ function EstimatedPaymentsAIPage() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      {result && (
-        <div className="card" style={{ padding: 24 }}>
-          <h3>Plan</h3>
-          <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13, background: 'var(--background)', padding: 14, borderRadius: 8, overflow: 'auto' }}>
-            {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
-          </pre>
-        </div>
-      )}
+      {result && <AIReport response={result} title="Estimated payments plan" />}
     </div>
   );
 }
@@ -5974,6 +5962,7 @@ function YoYAnomalyPage() {
           <label className="form-label">Current-year summary (optional JSON)</label>
           <textarea className="form-input" rows={5} value={currentJson} onChange={(e) => setCurrentJson(e.target.value)} placeholder='{"agi":120000,"federal_tax":18000,"itemized":true}' />
         </div>
+        <NativeAIPresets examples={[{label: 'Income increase', values: {prior: {agi: 85000, federal_tax: 12000, itemized: false}, current: {agi: 120000, federal_tax: 18000, itemized: true}}}, {label: 'Income decrease', values: {prior: {agi: 120000, federal_tax: 18000, itemized: true}, current: {agi: 80000, federal_tax: 9000, itemized: false}}}, {label: 'Steady income', values: {prior: {agi: 95000, federal_tax: 14000, itemized: false}, current: {agi: 97000, federal_tax: 14500, itemized: false}}}]} onFill={(values) => { setPriorJson(JSON.stringify(values.prior, null, 2)); setCurrentJson(JSON.stringify(values.current, null, 2)); }} prerequisite={!selectedYear ? 'Select a real current tax year if required.' : ''} />
         <button type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop: 12 }}>
           {loading ? 'Analyzing...' : 'Detect Anomalies'}
         </button>
@@ -5981,14 +5970,7 @@ function YoYAnomalyPage() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      {result && (
-        <div className="card" style={{ padding: 24 }}>
-          <h3>Anomaly Report</h3>
-          <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13, background: 'var(--background)', padding: 14, borderRadius: 8, overflow: 'auto' }}>
-            {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
-          </pre>
-        </div>
-      )}
+      {result && <AIReport response={result} title="Year over year anomaly report" />}
     </div>
   );
 }
@@ -6075,6 +6057,7 @@ function FilingScenarioComparePage() {
           <label className="form-label">Focus / extra notes (optional)</label>
           <input type="text" className="form-input" value={focus} onChange={(e) => setFocus(e.target.value)} placeholder="e.g. spouse student loan interest" />
         </div>
+        <NativeAIPresets examples={[{label: 'Joint vs separate', values: {scenarios: ['married_filing_jointly', 'married_filing_separately'], focus: 'Compare tax liability and credit eligibility using the selected tax year.'}}, {label: 'Household status', values: {scenarios: ['single', 'head_of_household'], focus: 'Check dependent and household cost eligibility before recommending a filing status.'}}, {label: 'All statuses', values: {scenarios: ['single', 'married_filing_jointly', 'married_filing_separately', 'head_of_household'], focus: 'Show assumptions and eligibility checks for every scenario.'}}]} onFill={(values) => { setScenarios(Object.fromEntries(Object.keys(scenarios).map((key) => [key, values.scenarios.includes(key)]))); setFocus(values.focus); }} prerequisite={!selectedYear ? 'Select a real tax year if required.' : ''} />
         <button type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop: 12 }}>
           {loading ? 'Comparing...' : 'Compare Scenarios'}
         </button>
@@ -6082,14 +6065,7 @@ function FilingScenarioComparePage() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      {result && (
-        <div className="card" style={{ padding: 24 }}>
-          <h3>Comparison</h3>
-          <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13, background: 'var(--background)', padding: 14, borderRadius: 8, overflow: 'auto' }}>
-            {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
-          </pre>
-        </div>
-      )}
+      {result && <AIReport response={result} title="Filing scenario comparison" />}
     </div>
   );
 }
@@ -6235,13 +6211,15 @@ function BacklogUtilitiesTab() {
     <div className="card" style={{ padding: 16 }}>
       <h4>Document categorizer</h4>
       <textarea className="form-input" rows={3} value={doc} onChange={(e) => setDoc(e.target.value)} />
+      <NativeAIPresets examples={[{label: 'W-2 note', values: 'W-2 wages and withholding statement from an employer; confirm amounts against the uploaded document.'}, {label: 'Donation note', values: 'Charitable contribution receipt; verify the organization and amount against the original receipt.'}, {label: 'Business expense', values: 'Business supply purchase receipt; verify the date, vendor, and business purpose.'}]} onFill={setDoc} />
       <button className="btn" onClick={tagDoc}>Categorize</button>
-      {docResult && <pre style={{ marginTop: 8 }}>{JSON.stringify(docResult, null, 2)}</pre>}
+      {docResult && <AIReport response={docResult} title="Document categories" />}
       <hr style={{ margin: '20px 0' }} />
       <h4>Tax plan visualization</h4>
       <textarea className="form-input" rows={6} value={scenarioJson} onChange={(e) => setScenarioJson(e.target.value)} />
+      <NativeAIPresets examples={[{label: 'Baseline vs plan', values: {scenarios: [{name: 'baseline', taxable_income: 100000, federal_tax: 18000, state_tax: 5000}, {name: 'retirement plan', taxable_income: 92000, federal_tax: 16000, state_tax: 4600}]}}, {label: 'Three options', values: {scenarios: [{name: 'baseline', taxable_income: 85000, federal_tax: 14500, state_tax: 3900}, {name: 'itemized', taxable_income: 78000, federal_tax: 13000, state_tax: 3600}, {name: 'retirement', taxable_income: 74000, federal_tax: 12200, state_tax: 3400}]}}]} onFill={(values) => setScenarioJson(JSON.stringify(values, null, 2))} />
       <button className="btn" onClick={visualize}>Visualize</button>
-      {vizResult && <pre style={{ marginTop: 8 }}>{JSON.stringify(vizResult, null, 2)}</pre>}
+      {vizResult && <AIReport response={vizResult} title="Tax plan visualization" />}
     </div>
   );
 }
