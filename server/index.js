@@ -82,6 +82,7 @@ app.use('/api/forms', formRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/advanced', advancedRoutes);
 app.use('/api/ai-features', aiFeaturesRoutes);
+app.use('/api/wave50c', require('./routes/wave50c'));
 app.use('/api/integrations', require('./routes/integrations'));
 app.use('/api/cpa', require('./routes/cpaWorkflow'));
 app.use('/api/engagement', require('./routes/engagementLetters'));

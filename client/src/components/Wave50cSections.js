@@ -1,0 +1,1 @@
+import React from 'react';export default function Wave50cSections({sections}){return React.createElement('section',{'aria-label':'Details'},sections.map(s=>React.createElement('div',{key:s.label},React.createElement('strong',null,s.label+': '),s.value===''?' (empty)':' '+String(s.value))));}

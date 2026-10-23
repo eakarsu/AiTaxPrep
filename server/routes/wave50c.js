@@ -1,0 +1,14 @@
+'use strict';
+const express=require('express');const svc=require('../services/wave50c');
+const router=express.Router();
+const ownerOf=(req)=>String(req.user?.userId||req.user?.id||req.user?.sub||"unknown");
+const own=(req)=>svc.store.list(ownerOf(req));
+router.get('/tasks',(req,res)=>res.json({tasks:svc.filterTasks(own(req),req.query),sections:own(req).map(t=>svc.labelledSections(t))}));
+router.post('/tasks',(req,res)=>{try{res.status(201).json(svc.store.create(ownerOf(req),req.body||{}));}catch(e){res.status(400).json({error:e.message});}});
+router.patch('/tasks/:id',(req,res)=>{const t=svc.store.update(ownerOf(req),req.params.id,req.body||{});return t?res.json(t):res.status(404).json({error:'task not found'});});
+router.get('/export.csv',(req,res)=>{res.type('text/csv').send(svc.toCSV(svc.filterTasks(own(req),req.query)));});
+router.get('/export.json',(req,res)=>res.type('application/json').send(svc.toJSON(svc.filterTasks(own(req),req.query))));
+router.get('/ai/deduction-checklist',(_q,res)=>res.json(svc.aiDeductionChecklist(own(_q))));
+router.get('/ai/document-completeness',(_q,res)=>res.json(svc.aiDocCompleteness(own(_q))));
+router.get('/ai/estimate-summary',(_q,res)=>res.json(svc.aiEstimateSummary(own(_q))));
+module.exports=router;
